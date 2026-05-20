@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>deconv3d.ai – Dashboard</title>
+  <meta name="viewport" content="width=1200, initial-scale=0.30" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root{
+      --bg:#050712;
+      --bg2:#0b0f1f;
+      --panel: rgba(15,23,42,.86);
+      --panel2: rgba(15,23,42,.72);
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --border: rgba(55,65,81,.9);
+      --accent:#4f46e5;
+      --accent2:#22d3ee;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --err:#ef4444;
+      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --r-lg:18px;
+      --r-xl:24px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 50%, #000 100%);
+      color:var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    a{ color:inherit; text-decoration:none; }
+
+    header{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(16px);
+      background: linear-gradient(to bottom, rgba(3,7,18,.92), rgba(3,7,18,.75), transparent);
+      border-bottom:1px solid rgba(31,41,55,.8);
+    }
+    .wrap{ max-width:1120px; margin:0 auto; padding:0 18px; }
+    .nav{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 0; gap:12px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px; font-weight:650; letter-spacing:.02em;
+      white-space:nowrap;
+    }
+    .badge{
+      width:28px; height:28px; border-radius:999px;
+      display:grid; place-items:center;
+      background: radial-gradient(circle at 20% 20%, #a5b4fc, #4f46e5);
+      box-shadow: 0 0 24px rgba(79,70,229,.55);
+      font-size:12px; font-weight:800; color:#e5e7ff;
+    }
+    .navlinks{
+      display:flex; gap:16px; align-items:center; color:var(--muted); font-size:13px;
+      flex-wrap:wrap;
+    }
+    .navlinks a:hover{ color:var(--text); }
+
+    .navright{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .pill{
+      font-size:13px;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(15,23,42,.92);
+      color:var(--muted);
+      max-width: 44vw;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:8px;
+      font-size:13px;
+      padding:9px 12px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(15,23,42,.92);
+      color:var(--text);
+      cursor:pointer;
+      white-space:nowrap;
+      user-select:none;
+    }
+    .btn:hover{ border-color: rgba(99,102,241,.55); }
+    .btn.primary{
+      border:none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 12px 28px rgba(56,189,248,.25);
+      color:white;
+      font-weight:650;
+    }
+    .btn.danger{
+      border-color: rgba(239,68,68,.45);
+      color:#fecaca;
+      background: rgba(239,68,68,.10);
+    }
+    .btn.ghost{
+      background: rgba(15,23,42,.65);
+    }
+
+    main{ padding: 18px 0 34px; }
+
+    .stack{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      align-items:stretch;
+    }
+
+    .card{
+      border:1px solid var(--border);
+      background: radial-gradient(circle at top left, #111827 0, #020617 60%);
+      border-radius: var(--r-xl);
+      box-shadow: var(--shadow);
+      padding:16px;
+      overflow:hidden;
+    }
+
+    .card h2{
+      margin:0 0 6px;
+      font-size:15px;
+      font-weight:650;
+    }
+    .sub{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.5;
+      margin:0 0 12px;
+    }
+
+    .uploadRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .filebtn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: rgba(15,23,42,.85);
+      cursor:pointer;
+      user-select:none;
+      min-width: 240px;
+      max-width: 100%;
+    }
+    .filebtn:hover{ border-color: rgba(99,102,241,.55); }
+    .filebtn .icon{
+      width:30px; height:30px; border-radius:12px;
+      display:grid; place-items:center;
+      background: rgba(79,70,229,.18);
+      border:1px solid rgba(79,70,229,.35);
+      color:#c7d2fe;
+      flex:0 0 auto;
+    }
+    .filebtn .meta{
+      display:flex; flex-direction:column; gap:2px;
+      min-width: 0;
+    }
+    .filebtn .meta b{
+      font-size:13px;
+      font-weight:650;
+      line-height:1.2;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .filebtn .meta span{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    #file{
+      position:absolute;
+      width:1px; height:1px;
+      opacity:0;
+      pointer-events:none;
+    }
+
+    .chip{
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(15,23,42,.75);
+      color: var(--muted);
+      font-size:12px;
+      max-width: 100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    /* ✅ model dropdown (matches chip) */
+    .chipSelect{
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(15,23,42,.75);
+      color: var(--muted);
+      font-size:12px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .chipSelect select{
+      padding:6px 10px;
+      border-radius:12px;
+      border:1px solid rgba(55,65,81,.75);
+      background: rgba(15,23,42,.92);
+      color: var(--text);
+      outline:none;
+    }
+
+    .bar{
+      height:10px;
+      border-radius:999px;
+      border:1px solid rgba(55,65,81,.75);
+      background: rgba(15,23,42,.65);
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      transition: width .25s ease;
+    }
+    .statusline{
+      margin-top:10px;
+      font-size:13px;
+      color:var(--muted);
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: var(--ok);
+      box-shadow: 0 0 10px rgba(34,197,94,.55);
+      display:inline-block;
+    }
+    .dot.warn{ background: var(--warn); box-shadow: 0 0 10px rgba(245,158,11,.45); }
+    .dot.err{ background: var(--err); box-shadow: 0 0 10px rgba(239,68,68,.45); }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .toolsLeft{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .toolsRight{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+    .small{ font-size:12px; color:var(--muted); }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid rgba(55,65,81,.75);
+      background: rgba(15,23,42,.55);
+    }
+    thead th{
+      text-align:left;
+      font-size:12px;
+      color: #cbd5e1;
+      font-weight:650;
+      padding:10px 10px;
+      border-bottom:1px solid rgba(55,65,81,.55);
+      background: rgba(15,23,42,.65);
+      white-space:nowrap;
+    }
+    tbody td{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(55,65,81,.35);
+      font-size:13px;
+      color: var(--text);
+      vertical-align:middle;
+    }
+    tbody tr:last-child td{ border-bottom:none; }
+    .muted{ color:var(--muted); }
+    .right{ text-align:right; }
+
+    .badgeState{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(55,65,81,.75);
+      background: rgba(15,23,42,.75);
+      font-size:12px;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .badgeState .bDot{ width:7px; height:7px; border-radius:999px; background: #64748b; }
+    .badgeState.running .bDot{ background: var(--warn); }
+    .badgeState.done .bDot{ background: var(--ok); }
+    .badgeState.error .bDot{ background: var(--err); }
+
+    .rowActions{
+      display:flex;
+      gap:8px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+    .aLink{
+      font-size:12px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(55,65,81,.85);
+      background: rgba(15,23,42,.85);
+      color: var(--text);
+      white-space:nowrap;
+      cursor:pointer;
+    }
+    .aLink:hover{ border-color: rgba(99,102,241,.55); }
+    .aLink.danger{
+      border-color: rgba(239,68,68,.45);
+      color:#fecaca;
+      background: rgba(239,68,68,.10);
+    }
+
+    .aLink.success{
+      border-color: rgba(34,197,94,.6);
+      color: #ecfdf5;
+      font-weight: 600;
+    }
+
+    .checkbox{
+      width:16px; height:16px;
+      accent-color: var(--accent2);
+      cursor:pointer;
+    }
+    .empty{
+      padding:12px;
+      border:1px dashed rgba(55,65,81,.8);
+      border-radius:16px;
+      color: var(--muted);
+      font-size:13px;
+      background: rgba(15,23,42,.35);
+    }
+
+    @media (max-width: 920px){
+      .pill{ display:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="/">
+        <span class="badge">3D</span>
+        <span>deconv3d.ai</span>
+      </a>
+
+      <nav class="navlinks">
+        <a href="/">Home</a>
+        <a href="/demo">Dashboard</a>
+      </nav>
+
+      <div class="navright">
+        {% if user_email %}
+          <span class="pill">{{ user_email }}</span>
+          <a class="btn" href="/logout">Logout</a>
+        {% else %}
+          <a class="btn" href="/login">Login</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="stack">
+
+        <!-- Upload -->
+        <section class="card">
+          <h2>Upload a 3D volume</h2>
+          <p class="sub">
+            Upload 16-bit or higher microscopy volumes in <b>.nii / .nii.gz</b>, <b>3D TIFF stacks</b> (<b>.tif/.tiff</b>), <b>HDF5</b> (<b>.h5/.hdf5</b>), or <b>Zeiss CZI</b> (<b>.czi</b>).
+            Jobs are stored for <b>10 hours</b>.
+          </p>
+
+          <input id="file" type="file"
+                 multiple
+                 accept=".nii,.nii.gz,.tif,.tiff,.h5,.hdf5,.czi,application/gzip" />
+
+          <div class="uploadRow">
+            <label class="filebtn" for="file" title="Choose 3D file(s)">
+              <div class="icon">⬆</div>
+              <div class="meta">
+                <b id="fileTitle">Choose 3D file(s)</b>
+                <span id="fileHint">Select multiple files if needed</span>
+              </div>
+            </label>
+
+            <span class="chip" id="fileName">No file selected</span>
+
+            <!-- ✅ NEW: model dropdown -->
+            <span class="chipSelect" title="Select model variant">
+              Model:
+              <select id="modelSelect">
+                <option value="linear" selected>Linear (b-catenin, Filamentous)</option>
+                <option value="blob">Blob (DAPI)</option>
+              </select>
+            </span>
+
+            <button class="btn primary" id="runBtn" type="button">Run inference</button>
+          </div>
+
+          <div class="bar" aria-label="progress">
+            <div id="prog"></div>
+          </div>
+
+          <div class="statusline">
+            <span class="dot" id="statusDot"></span>
+            <span id="uplStatus">Ready</span>
+            <span class="muted" id="liveTimer"></span>
+          </div>
+
+          <p class="sub" style="margin-top:12px;">
+            Tip: Uploads are sequential; inference runs when a GPU slot is available.
+          </p>
+        </section>
+
+        <!-- Jobs -->
+        <section class="card">
+          <div class="toolbar">
+            <div class="toolsLeft">
+              <h2 style="margin:0;">Jobs</h2>
+              <span class="small" id="lastUpdate">—</span>
+            </div>
+
+            <div class="toolsRight">
+              <label class="btn ghost" style="gap:8px;">
+                <input id="selectAll" type="checkbox" class="checkbox" />
+                Select all
+              </label>
+              <button class="btn primary" id="downloadSelBtn" type="button">Download selected (.zip)</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <div class="small" style="margin-bottom:6px;">Running / queued</div>
+            <div id="runningWrap"></div>
+          </div>
+
+          <div>
+            <div class="small" style="margin-bottom:6px;">Completed (includes public samples)</div>
+            <div id="doneWrap"></div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const BASE = "/deconv3d";
+
+    const fileEl = document.getElementById("file");
+    const runBtn = document.getElementById("runBtn");
+    const progEl = document.getElementById("prog");
+    const uplStatus = document.getElementById("uplStatus");
+    const statusDot = document.getElementById("statusDot");
+    const fileNameEl = document.getElementById("fileName");
+    const liveTimerEl = document.getElementById("liveTimer");
+
+    const modelSelect = document.getElementById("modelSelect"); // ✅ NEW
+
+    const runningWrap = document.getElementById("runningWrap");
+    const doneWrap = document.getElementById("doneWrap");
+
+    const selectAllEl = document.getElementById("selectAll");
+    const downloadSelBtn = document.getElementById("downloadSelBtn");
+    const lastUpdateEl = document.getElementById("lastUpdate");
+
+    let pollTimer = null;
+    let selected = new Set();
+
+    let activeJobId = null;
+    let activeJobStartTs = null; // ms
+    let activeJobTick = null;
+
+    const ALLOWED_EXT = [".nii.gz", ".nii", ".tif", ".tiff", ".h5", ".hdf5", ".czi"];
+
+    function formatTs(ts){
+      return new Date(ts * 1000).toLocaleString();
+    }
+
+    function setProgress(p){ progEl.style.width = Math.max(0, Math.min(100, p)) + "%"; }
+
+    function setDot(kind){
+      statusDot.className = "dot";
+      if(kind === "warn") statusDot.classList.add("warn");
+      if(kind === "err") statusDot.classList.add("err");
+    }
+
+    function pad2(n){ return String(n).padStart(2,"0"); }
+    function formatElapsed(sec){
+      sec = Math.max(0, Math.floor(sec));
+      const m = Math.floor(sec/60);
+      const s = sec % 60;
+      return `${pad2(m)}:${pad2(s)}`;
+    }
+
+    function escapeHtml(s){
+      return String(s || "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function startActiveTimer(){
+      if(activeJobTick) clearInterval(activeJobTick);
+      activeJobTick = setInterval(() => {
+        if(!activeJobStartTs) return;
+        const sec = (Date.now() - activeJobStartTs)/1000;
+        liveTimerEl.textContent = "Processing time: " + formatElapsed(sec);
+      }, 1000);
+    }
+    function stopActiveTimer(){
+      if(activeJobTick) clearInterval(activeJobTick);
+      activeJobTick = null;
+      activeJobId = null;
+      activeJobStartTs = null;
+      liveTimerEl.textContent = "";
+    }
+
+    function extOk(name){
+      const n = String(name || "").toLowerCase();
+      return ALLOWED_EXT.some(ext => n.endsWith(ext));
+    }
+
+    fileEl.addEventListener("change", () => {
+      const files = fileEl.files ? Array.from(fileEl.files) : [];
+      if(files.length === 0){
+        fileNameEl.textContent = "No file selected";
+        return;
+      }
+      fileNameEl.textContent = (files.length === 1) ? files[0].name : `${files.length} files selected`;
+    });
+
+    async function runInference(){
+      const files = fileEl.files ? Array.from(fileEl.files) : [];
+      if(files.length === 0){
+        uplStatus.textContent = "Please choose file(s)";
+        setDot("warn");
+        return;
+      }
+
+      const bad = files.filter(f => !extOk(f.name));
+      if(bad.length > 0){
+        setDot("err");
+        uplStatus.textContent = "Unsupported file(s)";
+        alert(
+          "Unsupported files:\n" +
+          bad.map(x => x.name).join("\n") +
+          "\n\nAllowed:\n" + ALLOWED_EXT.join(", ")
+        );
+        return;
+      }
+
+      runBtn.disabled = true;
+      runBtn.style.opacity = "0.7";
+      runBtn.style.cursor = "not-allowed";
+
+      try{
+        setDot("warn");
+        setProgress(8);
+
+        const mode = (modelSelect?.value || "linear"); // ✅ NEW
+        uplStatus.textContent = `Uploading 1/${files.length}… (${mode})`;
+        liveTimerEl.textContent = "";
+
+        for(let i=0; i<files.length; i++){
+          const f = files[i];
+
+          uplStatus.textContent = `Uploading ${i+1}/${files.length}… (${mode})`;
+          setProgress(8 + Math.round((i / files.length) * 30));
+
+          const fd = new FormData();
+          fd.append("nii", f);
+          fd.append("mode", mode); // ✅ NEW: send to backend
+
+          const res = await fetch(`${BASE}/predict`, { method:"POST", body: fd });
+
+          if(!res.ok){
+            const raw = await res.text();
+            let msg = raw;
+            try{
+              const j = JSON.parse(raw);
+              msg = j.error || JSON.stringify(j);
+            }catch(e){
+              msg = raw.replace(/<[^>]*>/g, "").trim();
+            }
+            throw new Error(`Rejected ${f.name}: ${msg}`);
+          }
+
+          const data = await res.json();
+          const jobId = data.job_id;
+
+          activeJobId = jobId;
+          activeJobStartTs = Date.now();
+          startActiveTimer();
+
+          uplStatus.textContent = `Queued… (${i+1}/${files.length}) (${mode})`;
+          setProgress(40 + Math.round(((i+1) / files.length) * 20));
+
+          await fetchJobs();
+        }
+
+        setDot("warn");
+        uplStatus.textContent = `All files uploaded (${files.length}). Processing… (${modelSelect.value})`;
+        setProgress(65);
+
+      }catch(err){
+        setDot("err");
+        uplStatus.textContent = "Error: " + (err?.message || err);
+        setProgress(0);
+      }finally{
+        runBtn.disabled = false;
+        runBtn.style.opacity = "1";
+        runBtn.style.cursor = "pointer";
+      }
+    }
+
+    runBtn.addEventListener("click", runInference);
+
+    function buildTable(rows, kind){
+      if(!rows || rows.length === 0){
+        return `<div class="empty">No ${kind === "running" ? "running" : "completed"} jobs.</div>`;
+      }
+
+      const isDone = kind === "done";
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:42px;"></th>
+              <th>Job</th>
+              <th>Status</th>
+              <th class="right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for(const j of rows){
+        const jobId = String(j.job_id || "");
+        const state = String(j.state || "");
+        const msg = String(j.message || "");
+        const isSample = !!j.is_sample;
+
+        let elapsedTxt = "";
+        if(j.ts){
+          const sec = (Date.now()/1000) - Number(j.ts);
+          if(state === "queued" || state === "running"){
+            elapsedTxt = " • " + formatElapsed(sec);
+          }
+        }
+
+        const badgeCls =
+          state === "done" ? "done" :
+          (state === "error" ? "error" : "running");
+
+        const checked = selected.has(jobId) ? "checked" : "";
+        const disableSelect = (!isDone && state !== "done") ? "disabled" : "";
+        const selectTitle = (!isDone && state !== "done") ? 'title="Select works for completed jobs"' : "";
+
+        const viewUrl = `${BASE}` + (j.view_url || (isSample ? ("/view_public/" + jobId) : ("/view_center/" + jobId)));
+        const dlUrl = j.download_pred ? (`${BASE}` + j.download_pred) : "";
+
+        const nameBits = [];
+        if(j.input_name) nameBits.push(`<span class="muted">in:</span> <span class="muted">${escapeHtml(j.input_name)}</span>`);
+        if(j.pred_name) nameBits.push(`<span class="muted">out:</span> <span class="muted">${escapeHtml(j.pred_name)}</span>`);
+        const nameLine = nameBits.length ? `<div class="muted" style="font-size:12px;margin-top:2px;">${nameBits.join(" &nbsp; ")}</div>` : "";
+
+        const statusLabel =
+          (state === "done" ? "Done" :
+           state === "error" ? "Error" :
+           state === "queued" ? "Queued" : "Running");
+
+        let actions = `<div class="rowActions">
+            <a class="aLink" href="${viewUrl}">View</a>`;
+
+        if(dlUrl) actions += `<a class="aLink success" href="${dlUrl}">Download</a>`;
+        if(!isSample) actions += `<button class="aLink danger" data-del="${escapeHtml(jobId)}" type="button">Delete</button>`;
+        actions += `</div>`;
+
+        html += `
+          <tr>
+            <td>
+              <input class="checkbox jobcheck" type="checkbox" data-job="${escapeHtml(jobId)}" ${checked} ${disableSelect} ${selectTitle}/>
+            </td>
+
+            <td>
+              <div style="font-weight:600; font-size:13px;">
+                ${escapeHtml(jobId)} ${isSample ? '<span class="muted" style="font-weight:500;">(sample)</span>' : ''}
+              </div>
+
+              ${j.ts ? `<div class="muted" style="font-size:11px;margin-top:2px;">
+                Added: ${formatTs(j.ts)}
+              </div>` : ""}
+
+              ${nameLine}
+            </td>
+
+            <td>
+              <span class="badgeState ${badgeCls}">
+                <span class="bDot"></span>
+                ${escapeHtml(statusLabel)}${escapeHtml(elapsedTxt)}
+              </span>
+              <div class="muted" style="font-size:12px;margin-top:4px;">
+                ${escapeHtml(msg || statusLabel)}
+              </div>
+            </td>
+            <td class="right">${actions}</td>
+          </tr>
+        `;
+      }
+
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    function wireRowEvents(){
+      document.querySelectorAll(".jobcheck").forEach(cb => {
+        cb.addEventListener("change", (e) => {
+          const id = e.target.getAttribute("data-job");
+          if(e.target.checked) selected.add(id);
+          else selected.delete(id);
+          syncSelectAll();
+        });
+      });
+
+      document.querySelectorAll("[data-del]").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.target.getAttribute("data-del");
+          const typed = prompt(`To delete job ${id}, type DELETE (all caps) and press OK:`);
+          if(typed !== "DELETE"){
+            alert("Delete cancelled (you must type DELETE).");
+            return;
+          }
+          try{
+            const res = await fetch(`${BASE}/jobs/${encodeURIComponent(id)}`, { method:"DELETE" });
+            if(!res.ok) throw new Error(await res.text());
+            selected.delete(id);
+            await fetchJobs();
+          }catch(err){
+            alert("Delete failed: " + (err?.message || err));
+          }
+        });
+      });
+    }
+
+    function syncSelectAll(){
+      const allSelectable = Array.from(document.querySelectorAll(".jobcheck")).filter(cb => !cb.disabled);
+      if(allSelectable.length === 0){
+        selectAllEl.checked = false;
+        selectAllEl.indeterminate = false;
+        return;
+      }
+      const checked = allSelectable.filter(cb => cb.checked).length;
+      selectAllEl.checked = checked === allSelectable.length;
+      selectAllEl.indeterminate = checked > 0 && checked < allSelectable.length;
+    }
+
+    selectAllEl.addEventListener("change", () => {
+      const allSelectable = Array.from(document.querySelectorAll(".jobcheck")).filter(cb => !cb.disabled);
+      for(const cb of allSelectable){
+        cb.checked = selectAllEl.checked;
+        const id = cb.getAttribute("data-job");
+        if(cb.checked) selected.add(id); else selected.delete(id);
+      }
+      syncSelectAll();
+    });
+
+    downloadSelBtn.addEventListener("click", () => {
+      const ids = Array.from(selected);
+      if(ids.length === 0){
+        alert("Select at least one completed job (or sample) to download.");
+        return;
+      }
+      const qs = ids.map(x => "job_id=" + encodeURIComponent(x)).join("&");
+      window.location.href = `${BASE}/download_selected.zip?` + qs;
+    });
+
+    async function fetchJobs(){
+      try{
+        const res = await fetch(`${BASE}/jobs`);
+        if(!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+
+        const running = (data.running || []).slice().sort((a,b) => (Number(a.ts)||0) - (Number(b.ts)||0));
+        const done    = (data.done || []).slice().sort((a,b) => (Number(a.ts)||0) - (Number(b.ts)||0));
+
+        runningWrap.innerHTML = buildTable(running, "running");
+        doneWrap.innerHTML = buildTable(done, "done");
+
+        wireRowEvents();
+        syncSelectAll();
+
+        lastUpdateEl.textContent = "Updated " + new Date().toLocaleTimeString();
+
+        if(activeJobId){
+          const all = (data.running || []).concat(data.done || []);
+          const j = all.find(x => x.job_id === activeJobId);
+          if(j){
+            if(j.state === "queued"){
+              setDot("warn"); uplStatus.textContent = "Queued…"; setProgress(30);
+            }else if(j.state === "running"){
+              setDot("warn"); uplStatus.textContent = "Running inference…"; setProgress(55);
+            }else if(j.state === "done"){
+              setDot("ok"); uplStatus.textContent = "Done ✔"; setProgress(100); stopActiveTimer();
+            }else if(j.state === "error"){
+              setDot("err"); uplStatus.textContent = "Error (see job row)"; setProgress(0); stopActiveTimer();
+            }
+          }
+        }
+
+      }catch(err){
+        lastUpdateEl.textContent = "Update failed";
+        console.error(err);
+      }
+    }
+
+    function startPolling(){
+      if(pollTimer) clearInterval(pollTimer);
+      fetchJobs();
+      pollTimer = setInterval(fetchJobs, 2000);
+    }
+
+    setProgress(0);
+    startPolling();
+  </script>
+</body>
+</html>

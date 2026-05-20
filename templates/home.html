@@ -1,0 +1,1147 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>deconv3d.ai – 3D Organoid Microscopy Deconvolution</title>
+  <meta name="viewport" content="width=1200, initial-scale=0.30" />
+  <meta name="description" content="AI-powered 3D organoid microscopy image restoration and deconvolution for NIfTI volumes." />
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #050712;
+      --bg-elevated: #0b0f1f;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.15);
+      --accent-2: #22d3ee;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2933;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 50%, #000 100%);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .max-width {
+      width: 100%;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(16px);
+      background: linear-gradient(to bottom, rgba(3, 7, 18, 0.95), rgba(3, 7, 18, 0.8), transparent);
+      border-bottom: 1px solid rgba(31, 41, 55, 0.8);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      font-size: 1rem;
+      white-space: nowrap;
+    }
+
+    .logo-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 20% 20%, #a5b4fc, #4f46e5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 24px rgba(79, 70, 229, 0.7);
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #e5e7ff;
+      flex: 0 0 auto;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.25rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-right{
+      display:flex;
+      align-items:center;
+      gap:.6rem;
+      margin-left:auto;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      padding: 0.45rem 0.95rem;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.35);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .auth-pill{
+      font-size:.85rem;
+      padding:.42rem .8rem;
+      border-radius:999px;
+      border:1px solid rgba(55,65,81,.9);
+      background: rgba(15,23,42,.9);
+      color: var(--muted);
+      white-space: nowrap;
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .auth-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:.35rem;
+      font-size:.85rem;
+      padding:.45rem .9rem;
+      border-radius:999px;
+      border:1px solid rgba(55,65,81,.9);
+      background: rgba(15,23,42,.9);
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .auth-btn:hover{
+      border-color: rgba(99,102,241,.55);
+      background: rgba(15,23,42,.98);
+    }
+
+    main { flex: 1; }
+
+    /* Hero */
+    .hero { padding: 3.5rem 0 2.5rem; }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 2.5rem;
+      align-items: center;
+    }
+
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.6rem 0.25rem 0.3rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .hero-kicker-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #bbf7d0, #22c55e);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.7);
+    }
+
+    .hero-title {
+      font-size: clamp(2.3rem, 4vw, 3rem);
+      line-height: 1.08;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.9rem;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, #a5b4fc, #38bdf8, #22d3ee);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 0.97rem;
+      line-height: 1.6;
+      color: var(--muted);
+      max-width: 32rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .hero-badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--muted);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      align-items: center;
+      margin-bottom: 0.9rem;
+    }
+
+    .btn-primary {
+      padding: 0.75rem 1.4rem;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 18px 35px rgba(56, 189, 248, 0.35);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+    }
+
+    .btn-ghost {
+      padding: 0.7rem 1.2rem;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+    }
+
+    .hero-footnote {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 0.7rem;
+    }
+
+    .hero-feature-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0.3rem 0 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .hero-feature-list li {
+      margin-bottom: 0.18rem;
+      position: relative;
+      padding-left: 0.85rem;
+    }
+
+    .hero-feature-list li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-size: 0.75rem;
+      color: var(--accent-2);
+    }
+
+    /* Visual card */
+    .hero-visual { position: relative; }
+
+    .card {
+      position: relative;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at top left, #111827 0, #020617 60%);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      box-shadow: var(--shadow-soft);
+      padding: 1rem 1rem 1.2rem;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .card-pill {
+      font-size: 0.7rem;
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.12);
+      color: #bbf7d0;
+      border: 1px solid rgba(34, 197, 94, 0.45);
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 0.3rem;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #4b5563;
+    }
+
+    .dot:nth-child(1) { background: #f97373; }
+    .dot:nth-child(2) { background: #facc15; }
+    .dot:nth-child(3) { background: #22c55e; }
+
+    .side-label {
+      position: absolute;
+      top: 50%;
+      left: -48px;
+      transform: translateY(-50%) rotate(-90deg);
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(148, 163, 184, 0.7);
+    }
+
+    .volume-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr;
+      gap: 0.9rem;
+      align-items: stretch;
+      margin-bottom: 0.9rem;
+    }
+
+    .volume-panel {
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: radial-gradient(circle at top left, #111827, #020617);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      padding: 0.65rem 0.75rem 0.7rem;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .panel-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.45rem;
+      gap: 8px;
+    }
+
+    .panel-label span {
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    .volume-image {
+      flex: 1;
+      opacity: 0.9;
+      position: relative;
+      overflow: hidden;
+      min-height: 0px;
+    }
+
+    .volume-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(
+          45deg,
+          rgba(15, 23, 42, 0.85) 0%,
+          transparent 45%,
+          transparent 55%,
+          rgba(15, 23, 42, 0.85) 100%
+        ),
+        repeating-linear-gradient(
+          to right,
+          rgba(15, 23, 42, 0.42),
+          rgba(15, 23, 42, 0.42) 1px,
+          transparent 1px,
+          transparent 4px
+        ),
+        repeating-linear-gradient(
+          to bottom,
+          rgba(15, 23, 42, 0.42),
+          rgba(15, 23, 42, 0.42) 1px,
+          transparent 1px,
+          transparent 4px
+        );
+      mix-blend-mode: multiply;
+    }
+
+    .volume-image.enhanced {
+      background:
+        radial-gradient(circle at 25% 30%, rgba(244, 244, 245, 0.95), transparent 60%),
+        radial-gradient(circle at 60% 60%, rgba(96, 165, 250, 0.95), transparent 60%),
+        radial-gradient(circle at 80% 40%, rgba(45, 212, 191, 0.8), transparent 60%);
+      box-shadow: 0 0 40px rgba(56, 189, 248, 0.35);
+    }
+
+    .card-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      align-items: center;
+      margin-top: 0.75rem;
+    }
+
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.33rem 0.7rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #bfdbfe;
+      border: 1px solid rgba(59, 130, 246, 0.55);
+      margin-left: auto;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.75);
+    }
+
+    /* Samples */
+    .sample-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .sample-tile {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      min-width: 0;
+    }
+
+    .sample-tile:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(56, 189, 248, 0.35);
+    }
+
+    .sample-img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .sample-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.65));
+    }
+
+    /* Sections */
+    .section { padding: 1.8rem 0 2.5rem; }
+
+    .section-header { text-align: left; margin-bottom: 1.5rem; }
+
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    .section-subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .feature-card {
+      border-radius: var(--radius-lg);
+      background: rgba(15, 23, 42, 0.98);
+      border: 1px solid rgba(31, 41, 55, 0.95);
+      padding: 0.9rem 0.95rem 1rem;
+      font-size: 0.83rem;
+      color: var(--muted);
+      min-width: 0;
+    }
+
+    .feature-card h3 {
+      font-size: 0.95rem;
+      margin: 0 0 0.3rem;
+      color: var(--text);
+    }
+
+    .feature-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      margin-bottom: 0.4rem;
+      color: #c4b5fd;
+    }
+
+    .feature-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0.4rem 0 0;
+    }
+
+    .feature-list li {
+      position: relative;
+      padding-left: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .feature-list li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--accent-2);
+      font-size: 0.7rem;
+      top: 0;
+    }
+
+    /* Docs */
+    .docs-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      font-size: 0.83rem;
+      margin-top: 0.6rem;
+    }
+
+    .docs-link-pill {
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      border: 1px dashed rgba(55, 65, 81, 0.9);
+      color: var(--muted);
+    }
+
+    footer {
+      border-top: 1px solid rgba(31, 41, 55, 0.9);
+      padding: 1.1rem 0 1.4rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: auto;
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.8rem;
+      align-items: center;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+
+    .footer-links a { opacity: 0.75; }
+    .footer-links a:hover {
+      opacity: 1;
+      color: #e5e7eb;
+    }
+
+    /* Responsive */
+    @media (max-width: 880px) {
+      .hero-grid { grid-template-columns: minmax(0, 1fr); }
+      .hero { padding-top: 2.5rem; }
+      .hero-visual { order: -1; }
+      .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .sample-grid { grid-template-columns: 1fr; }
+      .auth-pill{ display:none; }
+    }
+
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hero { padding-top: 2.1rem; }
+      .feature-grid { grid-template-columns: minmax(0, 1fr); }
+      .card { padding: 0.9rem 0.85rem 1rem; }
+      .sample-img { height: 120px; }
+      .auth-pill{ display:none; }
+    }
+    /* .sample-canvas{
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      display: block;
+} */
+
+   .sample-canvas{
+      width: 101%;
+      height: 130px;
+      object-fit: cover;
+      display: block;
+}
+
+    .sample-card{
+  margin-top: 1rem;
+}
+
+.sample-desc{
+  font-size:.82rem;
+  color: var(--muted);
+  margin: .2rem 0 .7rem;
+}
+
+.sample-download-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap:.65rem;
+}
+
+.sample-download-tile{
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+  padding:.55rem .7rem;
+  border-radius:14px;
+  border:1px solid rgba(55,65,81,.9);
+  background: rgba(15,23,42,.9);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.sample-download-tile:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(56,189,248,.25);
+}
+
+.sample-icon{
+  font-size:1.2rem;
+  width:34px;
+  height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  background: rgba(79,70,229,.18);
+  border:1px solid rgba(79,70,229,.35);
+}
+
+.sample-meta{
+  min-width:0;
+}
+
+.sample-name{
+  font-size:.85rem;
+  font-weight:600;
+  color: var(--text);
+}
+
+.sample-sub{
+  font-size:.72rem;
+  color: var(--muted);
+}
+
+.sample-hint{
+  margin-top:.5rem;
+  font-size:.75rem;
+  color: var(--muted);
+}
+
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <header>
+      <div class="max-width nav">
+        <a class="logo" href="/">
+          <div class="logo-badge">3D</div>
+          <span>deconv3d.ai</span>
+        </a>
+
+        <nav class="nav-links">
+          <a href="/#sample">Home</a>
+          <a href="/#features">Features</a>
+        </nav>
+
+        <div class="nav-right">
+          {% if user_email %}
+            <span class="auth-pill">{{ user_email }}</span>
+            <a class="auth-btn" href="/logout">Logout</a>
+          {% else %}
+            <a class="auth-btn" href="/login">Login</a>
+          {% endif %}
+
+          <a href="/demo" class="nav-cta">Dashboard</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" id="sample">
+        <div class="max-width hero-grid">
+          <div>
+            <div class="hero-kicker">
+              <div class="hero-kicker-dot"></div>
+              AI-powered 3D microscopy deconvolution 
+            </div>
+
+            <h1 class="hero-title">
+              Deconvolve 3D Microscopy images<br />
+               with <span>Zero hardware upgrades</span>
+            </h1>
+
+            <p class="hero-subtitle">
+              <strong>deconv3d.ai</strong> is an AI-based Deconvolution model for restoring raw Z-stack images into a confocal-like images.
+
+            </p>
+
+            <div class="hero-badges">
+              <div class="hero-badge">Formats: <code>.nii</code>, <code>.nii.gz</code>, <code>.tif</code>, <code>.h5</code>, <code>.czi</code></div>
+              <div class="hero-badge">3D microscopy</div>
+              <div class="hero-badge">Fast GPU inference</div>
+            </div>
+            
+
+            <div class="hero-actions" id="upload">
+              <a class="btn-primary" href="/demo">Upload 3D volume</a>
+              <a class="btn-ghost" href="#features">View workflow</a>
+            </div>
+
+
+
+            <p class="hero-footnote">
+              Built for labs and imaging cores for generating high quality image from low quality microscope platform or 40X objective.
+            </p>
+            <ul class="hero-feature-list">
+              <li>Browser-based: no installs or IT tickets.</li>
+              <li>Consistent output for screening, QC, and quantification.</li>
+              <li>Ideal pre-processing step for segmentation and downstream AI.</li>
+            </ul>
+          </div>
+
+          <div class="hero-visual">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                   3D Volume Preview
+                  <span class="card-pill">AI deconvolution</span>
+                </div>
+                <div class="window-dots">
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                </div>
+              </div>
+
+              <div class="side-label">NIfTI</div>
+
+              <div class="volume-grid">
+                <div class="volume-panel">
+                  <div class="panel-label">
+                    Input Image
+                    <span>Raw</span>
+                  </div>
+                  <div class="volume-image">
+                    <div class="volume-overlay"></div>
+                  </div>
+                </div>
+
+                <div class="volume-panel">
+                  <div class="panel-label">
+                    AI output
+                    <span>Deconvolve</span>
+                  </div>
+                  <div class="volume-image enhanced">
+                    <div class="volume-overlay"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ✅ FIXED: sample tile images match their job IDs -->
+              <div class="sample-grid">
+                <a class="sample-tile" target="_blank" rel="noopener">
+                  <canvas class="sample-canvas" data-crop="0.95"></canvas>
+                  <img src="/static/jobs/cc54276d0710/in_0008.png"
+                       class="sample-src"
+                       alt="Sample 1 (input)"
+                       style="display:none;" />
+                </a>         
+                
+                <a class="sample-tile" target="_blank" rel="noopener">
+                  <canvas class="sample-canvas" data-crop="0.95"></canvas>
+                  <img src="/static/jobs/cc54276d0710/pred_0008.png"
+                       class="sample-src"
+                       alt="Sample 1 (input)"
+                       style="display:none;" />
+                </a>     
+
+
+                <!-- secondexplaile -->
+                <!-- <a class="sample-tile" target="_blank" rel="noopener">
+                  <canvas class="sample-canvas" data-tint="green" data-crop="1"></canvas>
+                  <img src="/static/jobs/b2f04fe44783/in_0035_a.png"
+                       class="sample-src"
+                       alt="Sample 1 (input)"
+                       style="display:none;" />
+                </a>         
+                
+                <a class="sample-tile" target="_blank" rel="noopener">
+                  <canvas class="sample-canvas" data-tint="green" data-crop="1"></canvas>
+                  <img src="/static/jobs/b2f04fe44783/pred_0035_a.png"
+                       class="sample-src"
+                       alt="Sample 1 (input)"
+                       style="display:none;" />
+                </a>  -->
+            
+              </div>
+              
+            
+          <div class="card sample-card">
+          <div class="card-header">
+            <div class="card-title">
+              Sample data
+              <span class="card-pill">Try it yourself</span>
+            </div>
+          </div>
+
+          <!-- <p class="sample-desc">
+            Download example data and upload them to the dashboard to test
+            <strong>deconv3d.ai</strong>.
+          </p> -->
+
+          <div class="sample-download-grid">
+            <a class="sample-download-tile"
+              href="/samples/sample_image_3d_blob.nii.gz"
+              download>
+              <div class="sample-icon">⬇️</div>
+              <div class="sample-meta">
+                <div class="sample-name">3D Sample</div>
+                <div class="sample-sub">Blob · .nii.gz </div>
+              </div>
+            </a>
+
+            <a class="sample-download-tile"
+              href="/samples/sample_image_2d_blob.nii.gz"
+              download>
+              <div class="sample-icon">⬇️</div>
+              <div class="sample-meta">
+                <div class="sample-name">2D Sample</div>
+                <div class="sample-sub">Blob · .nii.gz</div>
+              </div>
+            </a>
+          </div>
+
+          <div class="sample-hint">
+  Tip: Download example data and upload them to the dashboard to test
+            <strong>deconv3d.ai</strong>.          </div>
+        </div>
+
+
+              <div class="card-footer">
+
+                <div class="status-tag">
+                  <div class="status-dot"></div>
+                  Browser inference
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </section>
+
+      
+      <section>
+
+      </section>
+
+      <section class="section" id="features">
+        <div class="max-width">
+          <div class="section-header">
+            <h2 class="section-title">Built for experimental and translational teams</h2>
+            <!-- <p class="section-subtitle">
+              From small academic groups to high-throughput screening labs, deconv3d.ai gives you a reliable, repeatable
+              deconvolution layer in your imaging pipeline.
+            </p> -->
+          </div>
+
+          <div class="feature-grid" id="workflow">
+            <article class="feature-card">
+              <span class="feature-tag">1. Upload</span>
+              <h3>Drop in your 3D volume</h3>
+              <p>
+                Upload 3D Volume directly into the browser and select model Linear(b-catenin, Filamentous) or Blob(DAPI).
+                No local installs, drivers, or Python environments to manage.
+              </p>
+              <ul class="feature-list">
+                <li>Supports fluorescence Z-stacks</li>
+                <li>Secure, session-based processing</li>
+                <li>Works with data from low-cost microscopes</li>
+              </ul>
+            </article>
+
+            <article class="feature-card">
+              <span class="feature-tag">2. Enhance</span>
+              <h3>AI-powered deconvolution</h3>
+              <p>
+                Our custom 3D AI model denoises, sharpens, and deconvolves while preserving delicate boundaries and
+                small structures critical for quantification.
+              </p>
+              <ul class="feature-list">
+                <li>3D context across the full volume</li>
+                <li>Optimized for fast inference on standard GPUs</li>
+                <li>Trained to avoid hallucinating structures</li>
+              </ul>
+            </article>
+
+            <article class="feature-card">
+              <span class="feature-tag">3. Export</span>
+              <h3>Visualize and download</h3>
+              <p>
+                Scroll through enhanced slices, compare input vs output, and download the deconvolved output for
+                segmentation, tracking, or downstream AI tasks.
+              </p>
+              <ul class="feature-list">
+                <li>Side-by-side review for quick QC</li>
+                <li>Compatible with napari, Fiji, and Python workflows</li>
+                <li>Ideal for organoid screens and assay readouts</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="contact">
+        <div class="max-width">
+          <div class="section-header">
+            <h2 class="section-title">Contact & collaborations</h2>
+            <p class="section-subtitle">
+              Want a demo, a pilot run on your dataset, or a custom deployment for your lab or core facility?
+            </p>
+      
+            <div class="docs-links">
+              <a href="mailto:bparvin@unr.edu" class="docs-link-pill">
+                bparvin@unr.edu
+              </a>
+              <a href="mailto:sohaib.cs1@gmail.com" class="docs-link-pill">
+                sohaib.cs1@gmail.com
+              </a>
+            </div>            
+      
+            <p class="section-subtitle" style="margin-top:10px;">
+              Academic use welcome. For commercial/clinical evaluation, contact us for licensing and deployment options.
+            </p>
+          </div>
+
+        </div>
+  
+        
+      </section>
+    </main>
+    
+
+    <footer id="contact">
+      <div class="max-width footer-inner">
+        <div>© <span id="year"></span> deconv3d.ai ·         <a href="https://www.linkedin.com/in/sohaibcs1/">Linkedin</a>
+          </div>
+
+        <div class="footer-links">
+       
+          <a href="https://clustrmaps.com/site/1c93i"
+          target="_blank"
+          rel="noopener"
+          style="display:flex; align-items:center; gap:6px; text-decoration:none;">
+         
+         <!-- 🌍 Global visitors -->
+         
+         <img
+           src="https://clustrmaps.com/map_v2.png?d=aMnqEW0rJCLFkC6ZehgZRaDpsoRgFFzO9hL_d1LTZNw&cl=ffffff&w=90"
+           alt="Global visitor map"
+           style="
+             width:90px;
+             height:auto;
+             border-radius:6px;
+             opacity:0.75;
+             filter:grayscale(100%);
+           "
+         />
+       </a>
+          
+        
+        
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+
+</body>
+</html>
+<script>
+  function tintRed(imgEl, canvasEl){
+    const ctx = canvasEl.getContext("2d", { willReadFrequently: true });
+
+    function drawCropped(ctx, imgEl, w, h, canvasEl){
+  // crop factor: 1.0 = no crop, 0.65 = zoom in
+  const crop = Math.max(0.1, Math.min(1.0, Number(canvasEl.dataset.crop || 1.0)));
+
+  const sw = Math.round(w * crop);
+  const sh = Math.round(h * crop);
+
+  // center crop
+  const sx = Math.round((w - sw) / 2);
+  const sy = Math.round((h - sh) / 2);
+
+  ctx.drawImage(imgEl, sx, sy, sw, sh, 0, 0, w, h);
+}
+
+    function render(){
+      const w = imgEl.naturalWidth;
+      const h = imgEl.naturalHeight;
+      if(!w || !h) return;
+
+      canvasEl.width = w;
+      canvasEl.height = h;
+
+      ctx.clearRect(0, 0, w, h);
+      // ctx.drawImage(imgEl, 0, 0, w, h);
+      drawCropped(ctx, imgEl, w, h, canvasEl);
+
+
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const d = imgData.data;
+
+      // 🔴 RED tint
+      // const cr = 255, cg = 60, cb = 60;
+      const tint = canvasEl.dataset.tint || "red";
+
+      let cr = 255, cg = 60, cb = 60; // default = red
+
+      if (tint === "gray") {
+        cr = 255; cg = 255; cb = 255;
+      }
+      if (tint === "green") {
+        cr = 40; cg = 255; cb = 100;
+      }  else if (tint === "blue") {
+        cr = 40;  cg = 120; cb = 255;
+      }
+
+
+
+      for(let i = 0; i < d.length; i += 4){
+        const r = d[i], g = d[i+1], b = d[i+2];
+        const lum = 0.2126*r + 0.7152*g + 0.0722*b;
+        const s = lum / 255.0;
+
+        d[i]   = cr * s;
+        d[i+1] = cg * s;
+        d[i+2] = cb * s;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    // ✅ handle first load + cached load
+    if(imgEl.complete && imgEl.naturalWidth > 0){
+      render();
+    }else{
+      imgEl.addEventListener("load", render, { once:true });
+      imgEl.addEventListener("error", () => {
+        console.warn("Sample image failed to load:", imgEl.src);
+      }, { once:true });
+    }
+  }
+
+  function initSamples(){
+    document.querySelectorAll(".sample-tile").forEach(tile => {
+      const img = tile.querySelector(".sample-src");
+      const canvas = tile.querySelector(".sample-canvas");
+      if(img && canvas) tintRed(img, canvas);
+    });
+  }
+
+  // ✅ ensure DOM exists before querySelectorAll
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", initSamples);
+  }else{
+    initSamples();
+  }
+</script>

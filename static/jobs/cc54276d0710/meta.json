@@ -1,0 +1,46 @@
+{
+  "job_id": "cc54276d0710",
+  "shape": [
+    1216,
+    1028,
+    67
+  ],
+  "weights": "/Users/muhammadsohaib/Desktop/deconv3d_app1/checkpoint/best_3d_deconv.pt",
+  "base_ch": 24,
+  "win": 4,
+  "roi": 64,
+  "overlap": 0.5,
+  "pad_win": true,
+  "device": "mps",
+  "use_amp": false,
+  "png_stride": 4,
+  "saved": {
+    "input": "AT1_no_apotome_07_raw_sec.nii.gz",
+    "pred": "output_AT1_no_apotome_07_raw_sec.nii.gz"
+  },
+  "z_indices": [
+    0,
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    40,
+    44,
+    48,
+    52,
+    56,
+    60,
+    64
+  ],
+  "timing": {
+    "load_sec": 3.310819149017334,
+    "pad_sec": 0.038366079330444336,
+    "infer_sec": 1050.2555210590363,
+    "total_sec": 1053.604706287384
+  }
+}

@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>deconv3d.ai – Slice Viewer</title>
+  <meta name="viewport" content="width=1200, initial-scale=0.30" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#050712; --text:#e5e7eb; --muted:#9ca3af; --border: rgba(55,65,81,.9);
+      --accent:#4f46e5; --accent2:#22d3ee; --shadow: 0 18px 45px rgba(0,0,0,.45); --r: 24px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 50%, #000 100%);
+      color:var(--text);
+      min-height:100vh;
+    }
+    header{
+      position: sticky; top:0; z-index:10;
+      backdrop-filter: blur(16px);
+      background: linear-gradient(to bottom, rgba(3,7,18,.95), rgba(3,7,18,.8), transparent);
+      border-bottom:1px solid rgba(31,41,55,.8);
+    }
+    .max{ max-width:1120px; margin:0 auto; padding: 0 18px; }
+    .nav{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; gap:12px; flex-wrap:wrap;}
+    .logo{ display:flex; align-items:center; gap:10px; font-weight:650; color:var(--text); text-decoration:none; }
+    .badge{
+      width:28px;height:28px;border-radius:999px;
+      background: radial-gradient(circle at 20% 20%, #a5b4fc, #4f46e5);
+      display:grid;place-items:center;font-size:12px;font-weight:800;color:#e5e7ff;
+      box-shadow:0 0 24px rgba(79,70,229,.7);
+    }
+    .pill{
+      border:1px solid rgba(55,65,81,.8);
+      background: rgba(15,23,42,.75);
+      border-radius:999px; padding:7px 10px;
+      color:var(--muted); font-size:13px;
+      max-width: 52vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:9px 14px; border-radius:999px;
+      border:1px solid rgba(55,65,81,.9);
+      background: rgba(15,23,42,.85);
+      color:var(--text); text-decoration:none; font-size:13px;
+    }
+    .btnPrimary{
+      border:none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 14px 30px rgba(56,189,248,.25);
+    }
+    main{ padding: 18px 0 42px; }
+    .card{
+      border-radius: var(--r);
+      background: rgba(15,23,42,.65);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between; }
+    h2{ margin:0; font-size: 16px; }
+    .muted{ color:var(--muted); font-size:13px; }
+    .controls{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    input[type="range"]{ width: 320px; max-width: 92vw; accent-color: var(--accent); }
+    select{
+      padding: 8px 10px; border-radius: 12px;
+      border: 1px solid rgba(55,65,81,.75);
+      background: rgba(15,23,42,.9);
+      color: var(--text); outline: none;
+    }
+    input[type="color"]{
+      width: 44px; height: 34px; border-radius: 10px;
+      border: 1px solid rgba(55,65,81,.75);
+      background: rgba(15,23,42,.9);
+      padding: 0; cursor: pointer;
+    }
+    .row{ display:flex; gap:14px; flex-wrap:wrap; margin-top: 14px; }
+    .panel{
+      flex: 1; min-width: 320px;
+      border-radius: var(--r);
+      background: rgba(2,6,23,.55);
+      border: 1px solid rgba(55,65,81,.75);
+      padding: 12px;
+    }
+    .panel h3{ margin: 0 0 10px; font-size: 14px; }
+    .imgWrap{ width: 100%; max-width: 360px; margin: 0 auto; }
+    /* canvas, img{
+      width: 88%; height: 50%; display:block;
+      border-radius: 14px;
+      image-rendering: pixelated;
+      background:#000;
+      border: 1px solid rgba(55,65,81,.55);
+    } */
+    canvas, img{
+  width: 100%;
+  height: auto;
+  display:block;
+  border-radius: 14px;
+  background:#000;
+  border: 1px solid rgba(55,65,81,.55);
+}
+
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="max nav">
+    <a class="logo" href="/demo">
+      <div class="badge">3D</div>
+      <span>deconv3d.ai</span>
+    </a>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <span class="pill">{{ user_email }}</span>
+      <span class="pill">{{ badge_text }}</span>
+      <a class="btn" href="/demo">Back</a>
+      <a class="btn" href="/logout">Logout</a>
+    </div>
+  </div>
+</header>
+
+<main class="max">
+  <div class="card">
+    <div class="top">
+      <div>
+        <h2>Job {{ job_id }}</h2>
+        <!-- <div class="muted">Slice <span id="idxText">{{ idx }}</span> / {{ n_slices - 1 }}</div> -->
+        <div class="muted">Slice <span id="idxText">{{ idx + 1 }}</span> / {{ n_slices }}</div>
+
+      </div>
+
+      <div class="controls">
+        <input id="slider" type="range" min="0" max="{{ n_slices - 1 }}" value="{{ idx }}">
+
+        <label class="muted" style="display:flex; align-items:center; gap:8px;">
+          Preset:
+          <select id="colorSelect">
+            <option value="blue" >Blue</option>
+            <option value="red">Red</option>
+            <option value="green">Green</option>
+            <option value="gray" >Gray</option>
+          </select>
+        </label>
+
+        <label class="muted" style="display:flex; align-items:center; gap:8px;">
+          Custom:
+          <input id="colorPicker" type="color" value="#1e50ff">
+        </label>
+
+        {% if download_pred_url %}
+          <!-- <a class="btn btnPrimary" href="{{ download_pred_url }}">Download File</a> -->
+          {% set PREFIX = "/deconv3d" %}
+          <a class="btn btnPrimary"
+             href="{{ download_pred_url[PREFIX|length:] if download_pred_url and download_pred_url.startswith(PREFIX) else download_pred_url }}">
+            Download File
+          </a>
+          
+
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="panel">
+        <h3>Input (colored)</h3>
+        <div class="imgWrap">
+          <canvas id="inCanvas"></canvas>
+          <img id="inSrc" src="{{ in_url }}" style="display:none;">
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Prediction (colored)</h3>
+        <div class="imgWrap">
+          <canvas id="predCanvas"></canvas>
+          <img id="predSrc" src="{{ pred_url }}" style="display:none;">
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const slider = document.getElementById("slider");
+  const idxText = document.getElementById("idxText");
+
+  const colorSelect = document.getElementById("colorSelect");
+  const colorPicker = document.getElementById("colorPicker");
+
+  const inSrc = document.getElementById("inSrc");
+  const predSrc = document.getElementById("predSrc");
+
+  const inCanvas = document.getElementById("inCanvas");
+  const predCanvas = document.getElementById("predCanvas");
+
+  const inCtx = inCanvas.getContext("2d", { willReadFrequently: true });
+  const predCtx = predCanvas.getContext("2d", { willReadFrequently: true });
+
+  const imgBase = "{{ img_base }}";
+
+  function pad4(n){ return String(n).padStart(4, "0"); }
+
+  function hexToRgb(hex){
+    const h = hex.replace("#", "").trim();
+    if (h.length !== 6) return [30, 80, 255];
+    return [parseInt(h.slice(0,2), 16), parseInt(h.slice(2,4), 16), parseInt(h.slice(4,6), 16)];
+  }
+
+  function presetToRgb(name){
+    if (name === "red")   return [255, 40, 40];
+    if (name === "green") return [40, 255, 100];
+    if (name === "gray")  return [255, 255, 255];
+    return [30, 80, 255];
+  }
+
+  function rgbToHex(r,g,b){
+    const toHex = (v)=>v.toString(16).padStart(2,"0");
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
+  function baseColor(){ return hexToRgb(colorPicker.value); }
+
+  function tintImageToCanvas(imgEl, canvasEl, ctx){
+    const w = imgEl.naturalWidth;
+    const h = imgEl.naturalHeight;
+    if (!w || !h) return;
+
+    canvasEl.width = w;
+    canvasEl.height = h;
+
+    ctx.drawImage(imgEl, 0, 0, w, h);
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const d = imgData.data;
+
+    const [cr, cg, cb] = baseColor();
+
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      const lum = (0.2126*r + 0.7152*g + 0.0722*b);
+      const s = lum / 255.0;
+      d[i]   = Math.round(cr * s);
+      d[i+1] = Math.round(cg * s);
+      d[i+2] = Math.round(cb * s);
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  function redrawBoth(){
+    tintImageToCanvas(inSrc, inCanvas, inCtx);
+    tintImageToCanvas(predSrc, predCanvas, predCtx);
+  }
+
+  function loadSlice(i){
+    idxText.textContent = i;
+    inSrc.onload = redrawBoth;
+    predSrc.onload = redrawBoth;
+    inSrc.src   = `${imgBase}/in_${pad4(i)}.png`;
+    predSrc.src = `${imgBase}/pred_${pad4(i)}.png`;
+  }
+
+  slider.addEventListener("input", () => loadSlice(Number(slider.value)));
+
+  colorSelect.addEventListener("change", () => {
+    const [r,g,b] = presetToRgb(colorSelect.value);
+    colorPicker.value = rgbToHex(r,g,b);
+    redrawBoth();
+  });
+
+  colorPicker.addEventListener("input", redrawBoth);
+
+  colorSelect.value = "green";
+  colorPicker.value = "#28ff64";  // matches your preset green [40,255,100]
+  loadSlice(Number(slider.value));
+
+</script>
+</body>
+</html>
